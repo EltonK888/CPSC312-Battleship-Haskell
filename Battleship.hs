@@ -1,7 +1,7 @@
 module Battleship where
 
-maxRow = 5
-maxCol = 5
+maxRow = 10
+maxCol = 10
 
 data State = State InternalState Actions
             deriving (Eq, Show)
@@ -15,20 +15,20 @@ data Result = EndOfGame Double State
 type Actions = [Coordinate]
 
 -- a Ship is just a list of coordinates
-type Ship = [Coordinate] 
+type Ship = [Coordinate]
 
 type Player = State -> Coordinate
 
 -- Coordinates is just Row and Column
 type Coordinate = (Int, Int)
 
--- internal state which is just a list of your coordinates and ship locations, and the computer's coordinates and ship locations
+-- internal state which is just a list of your selected coordinates and ship locations, and the computer's coordinates and ship locations
 type InternalState = ((Actions, [Ship]), (Actions, [Ship]))
 
 type Game = State -> Coordinate -> Result
 
 --instance Eq State where =
-        --(==) (State InternalState s1) (State InternalState s2) = 
+        --(==) (State InternalState s1) (State InternalState s2) =
 
 -- the Battleship Game
 battleship :: Game
@@ -71,3 +71,16 @@ generateShip (x,y) size orientation
     | orientation == "down" = (x, y + (size - 1)) : generateShip (x,y) (size-1) orientation
     | otherwise = (x + (size - 1), y) : generateShip (x,y) (size-1) orientation
 
+
+validShip :: Ship -> [Ship] -> Bool
+validShip [] _ = True
+validShip (h:t) ships
+    | validCoord h && (not $ elem h $ shipsToCoord ships) = validShip t ships
+    | otherwise = False
+
+shipsToCoord :: [Ship] -> [Coordinate]
+shipsToCoord [] = []
+shipsToCoord (h:t) = h++shipsToCoord t
+
+validCoord :: Coordinate -> Bool
+validCoord (x,y) = x >= 1 && x <= 10 && y >= 1 && y <= 10

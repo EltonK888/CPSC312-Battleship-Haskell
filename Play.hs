@@ -7,6 +7,7 @@ s1 = State (([], [[(1, 2), (1, 3), (1, 4)], [(2, 1), (2, 2)]]), ([], [[(4, 3), (
 s0 = State (([], [[]]), ([], [[]])) (generateAvailableMoves)
 ships0 = [[(-1,-1)]]
 
+directions = ["up","right","down","left"]
 
 play :: IO ()
 play =  setup s0 3 ships0
@@ -14,26 +15,36 @@ play =  setup s0 3 ships0
 
 
 setup :: State -> Int -> [Ship] -> IO ()
-setup s n ships = 
+setup s n ships =
     if (n < 2)
     then
-        playGame battleship 
+        playGame battleship
                 -- init ships deletes the (-1,-1) used to initialize ships0 (the last element)
-                (State (([], (init ships)), ([], [[]])) 
+                (State (([], (init ships)), ([], [[]]))
                     (generateAvailableMoves))
                 (-1,-1)
     else
         do
-            putStrLn("Enter size " ++ show n ++ " ship row: ")
+            putStrLn("Enter size " ++ show n ++ " ship row[1-10]: ")
             shipRowAsString <- getLine
-            putStrLn("Enter size " ++ show n ++ " ship row: ")
+            putStrLn("Enter size " ++ show n ++ " ship col[1-10]: ")
             shipColAsString <- getLine
             putStrLn("facing which direction? (up, right, down, left): ")
             ostr <- getLine
-            let row = read shipRowAsString :: Int
-            let col = read shipColAsString :: Int
-            let ship = generateShip (row,col) n ostr
-            setup s (n-1) (ship:ships)
+            if elem ostr directions
+              then do
+              let row = read shipRowAsString :: Int
+              let col = read shipColAsString :: Int
+              let ship = generateShip (row,col) n ostr
+              if validShip ship ships
+                then do
+                setup s (n-1) (ship:ships)
+                else do
+                  putStrLn("Invalid Ship Placement")
+                  setup s n ships
+              else do
+                putStrLn("Could not parse direction please select one of: \n
+                up \n right \n down \n left")
 
 
 playGame :: Game -> State -> Coordinate -> IO ()
@@ -45,7 +56,7 @@ playGame game start_state player =
         colAsString <- getLine
         let row = read rowAsString :: Int
         let col = read colAsString :: Int
-        
+
         print(game start_state (row, col))
         let (ContinueGame s) = game start_state (row, col)
         playGame game s (row, col)
