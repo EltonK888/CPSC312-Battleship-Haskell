@@ -7,7 +7,6 @@ s1 = State (([], [[(1, 2), (1, 3), (1, 4)], [(2, 1), (2, 2)]]), ([], [[(4, 3), (
 s0 = State (([], [[]]), ([], [[]])) (generateAvailableMoves)
 ships0 = [[(-1,-1)]]
 
-directions = ["up","right","down","left"]
 
 play :: IO ()
 play =  setup s0 3 ships0
@@ -43,8 +42,7 @@ setup s n ships =
                   putStrLn("Invalid Ship Placement")
                   setup s n ships
               else do
-                putStrLn("Could not parse direction please select one of: \n
-                up \n right \n down \n left")
+                putStrLn("Could not parse direction")
 
 
 playGame :: Game -> State -> Coordinate -> IO ()

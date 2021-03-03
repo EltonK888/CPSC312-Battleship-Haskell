@@ -1,12 +1,13 @@
 module Battleship where
+import System.Random
 
 maxRow = 10
 maxCol = 10
-
+directions = ["up","right","down","left"]
 data State = State InternalState Actions
             deriving (Eq, Show)
 
-
+data Board = [[Int]]
 data Result = EndOfGame Double State
             | ContinueGame State
             deriving (Eq, Show)
@@ -60,7 +61,7 @@ removeFromLst item lst = foldr (\x y -> if x == item then y else x:y) [] lst
 
 -- generates a grid as a 2d array of Coordinates which is maxCol by maxRow
 generateAvailableMoves :: Actions
-generateAvailableMoves = [(row, col) | row <- [1..maxRow], col <- [1..maxCol]]
+generateAvailableMoves = [(row, col) | row <- [1..10], col <- [1..10]]
 
 -- generates a ship's coordinates based on the shiphead's coordinates, and the orientation of the ship
 generateShip :: Coordinate -> Int -> String -> Ship
@@ -84,3 +85,23 @@ shipsToCoord (h:t) = h++shipsToCoord t
 
 validCoord :: Coordinate -> Bool
 validCoord (x,y) = x >= 1 && x <= 10 && y >= 1 && y <= 10
+
+placeCPUShips =
+  do
+    let ships = [[(-1,-1)]]
+    ships <- randomlyPlaceShip 5 ships
+    ships <- randomlyPlaceShip 4 ships
+    ships <- randomlyPlaceShip 3 ships
+    ships <- randomlyPlaceShip 2 ships
+    return ships
+
+randomlyPlaceShip :: Int -> [Ship] -> IO [Ship]
+randomlyPlaceShip n ships =
+  do
+    g <- newStdGen
+    let coord = ( ((randomRs (1,10) g) !! 0), ((randomRs (1,10) g) !! 1) )
+    let dir = directions !! (head (randomRs (0,3) g))
+    let newShip = generateShip coord n dir
+    if validShip newShip ships
+      then return [newShip]
+      else  randomlyPlaceShip n ships
