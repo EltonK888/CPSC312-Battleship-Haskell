@@ -62,3 +62,12 @@ removeFromLst item lst = foldr (\x y -> if x == item then y else x:y) [] lst
 generateAvailableMoves :: Actions
 generateAvailableMoves = [(row, col) | row <- [1..maxRow], col <- [1..maxCol]]
 
+-- generates a ship's coordinates based on the shiphead's coordinates, and the orientation of the ship
+generateShip :: Coordinate -> Int -> String -> Ship
+generateShip _ 0 _ = []
+generateShip (x,y) size orientation
+    | orientation == "up" = (x, y - (size - 1)) : generateShip (x,y) (size-1) orientation
+    | orientation == "right" = (x - (size - 1), y) : generateShip (x,y) (size-1) orientation
+    | orientation == "down" = (x, y + (size - 1)) : generateShip (x,y) (size-1) orientation
+    | otherwise = (x + (size - 1), y) : generateShip (x,y) (size-1) orientation
+
