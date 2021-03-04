@@ -41,6 +41,7 @@ myShipsToPicture myships = pictures (map (\ship -> pictures (map (\(x, y) -> (tr
 shipsToPoints :: [Ship] -> [[Point]]
 shipsToPoints ships = [[(fromIntegral x, fromIntegral y) | (x,y) <- ship] | ship <-ships ]
 
+-- fixes the Y coordinate bug
 fixYCoord :: Num b => Int -> b
 fixYCoord y = fromIntegral (maxCol - (y-1))
 

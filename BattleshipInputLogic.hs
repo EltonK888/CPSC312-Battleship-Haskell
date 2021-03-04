@@ -24,5 +24,6 @@ event _ world = world
 mapMousePos :: (RealFrac a, Num b) => a -> b
 mapMousePos x = fromIntegral (round ((x + (50.0*((fromIntegral maxCol)/2)))/50))
 
+-- fixes the Y coordinate bug
 fixYCord :: Num b => Int -> b
 fixYCord y = fromIntegral (maxCol - (y-1))

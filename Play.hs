@@ -19,8 +19,6 @@ setup s n ships =
     then
         do
         oppShips <- placeOppShips 3
-        print ships
-        print oppShips
         playGame battleship
                 -- init ships deletes the (-1,-1) used to initialize ships0 (the last element)
                 (ContinueGame (State (([], (init ships), []), ([], []:oppShips, []))
