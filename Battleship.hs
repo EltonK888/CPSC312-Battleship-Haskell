@@ -1,5 +1,9 @@
 module BattleShip where
+
 import System.Random
+import Text.Read   (readMaybe)
+import System.IO
+
 data State = State ((Board, [Ship]), (Board, [Ship]), [Coordinate])
             deriving (Eq, Show)
 data Result = EndOfGame Double State
@@ -17,9 +21,9 @@ type Game = State -> Coordinate -> Result
 -- InternalState is your board and list of ships, and the opponent board and their ships
 --type InternalState = ((Board, [Ship]), (Board, [Ship]))
 boardSize = 10
-shipSize = 3
+shipSize = 5
 directions = ["up","down","left","right"]
-
+legalCoord = ["1","2","3","4","5","6","7","8","9","10"]
 battleship_start = State ((startBoard,[[(1,1),(1,2)]]), (startBoard,[[(3,1),(3,2)]]), generateAvailableMoves)
 
 -- Create starting board of size 10x10 with all 0's
@@ -68,18 +72,33 @@ inputShip :: Int -> [Ship] -> IO Ship
 inputShip len ships = do
     putStrLn("Enter size " ++ show len ++ " ship row[1-10]: ")
     shipRowAsString <- getLine
-    putStrLn("Enter size " ++ show len ++ " ship col[1-10]: ")
-    shipColAsString <- getLine
-    putStrLn("facing which direction? (up, right, down, left): ")
-    ostr <- getLine
-    let row = read shipRowAsString :: Int
-    let col = read shipColAsString :: Int
-    let ship = generateShip (row,col) len ostr
-    if validShip ship ships then
-      return ship
-    else
-      inputShip len ships
-
+    if elem shipRowAsString legalCoord
+      then do
+        let row = read shipRowAsString:: Int
+        putStrLn("Enter size " ++ show len ++ " ship col[1-10]: ")
+        shipColAsString <- getLine
+        if elem shipColAsString legalCoord
+          then do
+            let col = read shipColAsString :: Int
+            putStrLn("facing which direction? [up, right, down, left]: ")
+            ostr <- getLine
+            if elem ostr directions
+              then do
+                let ship = generateShip (row,col) len ostr
+                if validShip ship ships then do
+                  return ship
+                else do
+                  putStrLn("Ship is out of bounds or on top of another ship!")
+                  inputShip len ships
+              else do
+                putStrLn("Incorect direction please select one of: [up,right,down,left]")
+                inputShip len ships
+            else do
+              putStrLn("Incorrect Column")
+              inputShip len ships
+        else do
+          putStrLn("Incorrect Row")
+          inputShip len ships
 -- generates a ship's coordinates based on the shiphead's coordinates, and the orientation of the ship
 generateShip :: Coordinate -> Int -> String -> Ship
 generateShip _ 0 _ = []
@@ -131,22 +150,33 @@ person_play :: Game -> Result -> Player -> IO ()
 person_play game (ContinueGame state) opponent =
   do
     let State ((b1,s1),(b2,s2), avail) = state
+    --putStrLn(show s2)
     putStrLn("================Enemy Board================")
     printBoard b2
     putStrLn("================Your Board================")
     printBoard b1
     putStrLn("Enter Row[1-10]: ")
     rowAsString <- getLine
-    putStrLn("Enter Column[1-10]: ")
-    colAsString <- getLine
-    putStrLn("You are firing at Row: "++rowAsString++ " Column: "++colAsString)
-    let row = read rowAsString :: Int
-    let col = read colAsString :: Int
-    computer_play game (game state (row,col)) opponent
+    if elem rowAsString legalCoord
+      then do
+        let row = read rowAsString :: Int
+        putStrLn("Enter Column[1-10]: ")
+        colAsString <- getLine
+        if elem colAsString legalCoord
+          then do
+            let col = read colAsString :: Int
+            putStrLn("You are firing at Row: "++rowAsString++ " Column: "++colAsString)
+            computer_play game (game state (row,col)) opponent
+          else do
+            putStrLn("Incorrect Column")
+            person_play game (ContinueGame state) opponent
+        else do
+          putStrLn("Incorrect Row")
+          person_play game (ContinueGame state) opponent
 
 person_play game (EndOfGame val battleship_start) opponent =
   do
-    putStrLn ("Computer Won! Too Ba")
+    putStrLn ("Computer Won! Too Bad")
 
 computer_play :: Game -> Result -> Player -> IO()
 computer_play game (EndOfGame val battleship_start) opponent =
@@ -168,7 +198,7 @@ play = do
   playerShips <- placeShips 2 []
   oppShips <- generateOpponentShips 2 []
   let newState = State ((fillShips (shipsToCoord playerShips) startBoard,playerShips), (startBoard,oppShips), generateAvailableMoves)
-  putStrLn("Select Difficulty: \n [0] Impossible  \n [1] Easy \n [2] Normal")
+  putStrLn("Select Difficulty: \n [0] Impossible  \n [1] Easy \n [2] Normal (Default)")
   diff<- getLine
   if diff == "0"
     then
