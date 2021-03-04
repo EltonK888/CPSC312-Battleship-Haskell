@@ -28,7 +28,7 @@ battleship_start = State ((startBoard,[[(1,1),(1,2)]]), (startBoard,[[(3,1),(3,2
 
 -- Create starting board of size 10x10 with all 0's
 startBoard::Board
-startBoard = replicate boardSize (replicate boardSize 'O')
+startBoard = replicate boardSize (replicate boardSize '~')
 
 -- Change n-th element in a list
 replace :: Int -> [a] -> a -> [a]
@@ -51,7 +51,7 @@ removeEmptyShips (x:xs) | null x    = removeEmptyShips xs
 checkHit :: Coordinate -> [Ship] -> Board -> (Bool, [Ship], Board)
 checkHit move ships b
     | or (foldr (\x y -> if elem move x then True:y else False:y) [] ships) = (True, [removeFromLst move x | x <- ships], fillBoard move b 'X')
-    | otherwise = (False, ships, fillBoard move b 'I')
+    | otherwise = (False, ships, fillBoard move b '\'')
 
 -- fills board at a coordinate with given input value
 fillBoard :: Coordinate -> Board -> Char -> Board
@@ -225,7 +225,7 @@ generateAvailableMoves = [(row, col) | row <- [1..boardSize], col <- [1..boardSi
 
 pickRandomAvail :: [Coordinate] -> Coordinate -> Coordinate -> Coordinate
 pickRandomAvail coords (a,b) (c,d) = let gen = mkStdGen (length coords + a + b*10 + c*100 + d*1000)
- in coords !! (head (randomRs (0,length coords) gen))
+ in coords !! (head (randomRs (0,(length coords)-1) gen))
 
 printBoard::Board -> IO()
 printBoard b = do
