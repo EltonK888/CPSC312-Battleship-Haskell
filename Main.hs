@@ -24,8 +24,9 @@ setup s n ships =
     if (n < 2)
     then
         do
-        cpuShips <- placeCPUShips
-        play window white 30 (ContinueGame (State (([], (init ships), [], generateAvailableMoves), ([], cpuShips, [], generateAvailableMoves)))) gameAsPicture event (const id)
+        cpuShips <- placeOppShips 5 []
+        
+        play window white 30 (ContinueGame (State (([], (init ships), [], generateAvailableMoves), ([], []:cpuShips, [], generateAvailableMoves)))) gameAsPicture event (const id)
         --playGame battleship
                 -- init ships deletes the (-1,-1) used to initialize ships0 (the last element)
                 --(ContinueGame (State (([], (init ships), []), ([], cpuShips, []))
@@ -77,4 +78,4 @@ window :: Display
 window = InWindow "Battleship" (1200, 800) (100,100)
 
 main :: IO ()
-main = setup s0 3 ships0
+main = setup s0 5 ships0

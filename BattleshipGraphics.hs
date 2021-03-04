@@ -41,14 +41,19 @@ myShipsToPicture myships = pictures (map (\ship -> pictures (map (\(x, y) -> (tr
 shipsToPoints :: [Ship] -> [[Point]]
 shipsToPoints ships = [[(fromIntegral x, fromIntegral y) | (x,y) <- ship] | ship <-ships ]
 
+fixYCoord :: Num b => Int -> b
+fixYCoord y = fromIntegral (maxCol - (y-1))
+
 -- creates a picture representation of the game
 gameAsPicture :: Result -> Picture
-gameAsPicture (EndOfGame _ s) = translate (-400) (0) (text "End of Game")
+gameAsPicture (EndOfGame _ (State ((mymoves, myships, myhit, myAvailMoves), (oppMoves, oppShips, opphit, oppAvailMoves)))) 
+    | (length oppShips) == 6 = translate (-400) (0) (text "Player 1 wins!")
+    | otherwise = translate (-400) (0) (text "Player 2 wins!")
 gameAsPicture (ContinueGame (State ((mymoves, myships, myhit, myAvailMoves), (oppMoves, oppShips, opphit, oppAvailMoves)))) = translate (-50.0 * 4) (-50.0 * 4) (pictures [
-    availableSquares [(fromIntegral x, fromIntegral y) | (x,y) <- myAvailMoves],
-    missedSquares [(fromIntegral (fst x), fromIntegral (snd x)) | x <- mymoves, not (elem x myAvailMoves)],
+    availableSquares [(fromIntegral x, fixYCoord (fromIntegral y)) | (x,y) <- myAvailMoves],
+    missedSquares [(fromIntegral (fst x), fixYCoord (fromIntegral (snd x))) | x <- mymoves, not (elem x myAvailMoves)],
     -- cpuHitSquares [(fromIntegral x, fromIntegral y) | (x,y) <- opphit],
     --myShipsToPicture (shipsToPoints myships),
-    hitSquares [(fromIntegral x, fromIntegral y) | (x,y) <- myhit],
+    hitSquares [(fromIntegral x, fixYCoord(fromIntegral y)) | (x,y) <- myhit],
     gridToPicture
     ])

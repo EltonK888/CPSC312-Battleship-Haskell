@@ -96,14 +96,38 @@ shipsToCoord (h:t) = h++shipsToCoord t
 validCoord :: Coordinate -> Bool
 validCoord (x,y) = x >= 1 && x <= maxRow && y >= 1 && y <= maxCol
 
-placeCPUShips =
-  do
-    let ships = []
-    ships <- randomlyPlaceShip 5 ships
-    ships <- randomlyPlaceShip 4 ships
-    ships <- randomlyPlaceShip 3 ships
-    ships <- randomlyPlaceShip 2 ships
-    return ships
+placeOppShips :: Int -> [Ship] -> IO [Ship]
+placeOppShips n ships =
+  if n < 2 then
+      do
+          return ships
+  else 
+    do
+        putStrLn("Player 2 Enter size " ++ show n ++ " ship row[1-8]: ")
+        shipRowAsString <- getLine
+        putStrLn("Player 2 Enter size " ++ show n ++ " ship col[1-8]: ")
+        shipColAsString <- getLine
+        putStrLn("facing which direction? (up, right, down, left): ")
+        ostr <- getLine
+        if elem ostr directions
+            then do
+            let row = read shipRowAsString :: Int
+            let col = read shipColAsString :: Int
+            let ship = generateShip (row,col) n ostr
+            if validShip ship ships
+            then do
+                placeOppShips (n-1) (ship:ships)
+            else do
+                putStrLn("Invalid Ship Placement")
+                placeOppShips n ships
+            else do
+                putStrLn("Could not parse direction")
+                placeOppShips n ships
+    --ships <- randomlyPlaceShip 5 ships
+    --ships <- randomlyPlaceShip 4 ships
+    --ships <- randomlyPlaceShip 3 ships
+    --ships <- randomlyPlaceShip 2 ships
+    --return ships
 
 randomlyPlaceShip :: Int -> [Ship] -> IO [Ship]
 randomlyPlaceShip n ships =

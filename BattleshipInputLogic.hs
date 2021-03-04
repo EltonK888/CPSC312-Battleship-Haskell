@@ -15,10 +15,14 @@ event (EventKey (MouseButton LeftButton) Up _ (mx, my)) (ContinueGame (State ((m
     | hit = ContinueGame (State ((oppMoves, oppNewShips, opphit, oppAvailMoves), (mousePos:mymoves, myships, mousePos:myhit, [act | act <- myAvailMoves, act /= mousePos])))
     | otherwise = ContinueGame (State ((oppMoves, oppNewShips, opphit, oppAvailMoves), (mousePos:mymoves, myships, myhit, [act | act <- myAvailMoves, act /= mousePos])))
     where
-        mousePos = (mapMousePos mx, mapMousePos my)
+        mousePos = (mapMousePos mx, fixYCord (mapMousePos my))
         (hit, oppNewShips, hitMove) = checkHit mousePos oppShips
         -- (hitOwn, _, _) = checkHit mousePos myships
 event _ world = world
 
 -- converts a mouse click position into a grid coordinate
+mapMousePos :: (RealFrac a, Num b) => a -> b
 mapMousePos x = fromIntegral (round ((x + (50.0*((fromIntegral maxCol)/2)))/50))
+
+fixYCord :: Num b => Int -> b
+fixYCord y = fromIntegral (maxCol - (y-1))
