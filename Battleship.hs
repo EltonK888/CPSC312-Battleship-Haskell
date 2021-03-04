@@ -1,76 +1,97 @@
-module Battleship where
 import System.Random
 
-maxRow = 10
-maxCol = 10
-directions = ["up","right","down","left"]
-data State = State InternalState Actions
+data State = State ((Board, [Ship]), (Board, [Ship]))
             deriving (Eq, Show)
-
-data Board = [[Int]]
 data Result = EndOfGame Double State
             | ContinueGame State
             deriving (Eq, Show)
 
--- Actions are a list of coordinates
-type Actions = [Coordinate]
-
--- a Ship is just a list of coordinates
-type Ship = [Coordinate]
-
-type Player = State -> Coordinate
-
--- Coordinates is just Row and Column
 type Coordinate = (Int, Int)
-
--- internal state which is just a list of your selected coordinates and ship locations, and the computer's coordinates and ship locations
-type InternalState = ((Actions, [Ship]), (Actions, [Ship]))
-
+-- Ship is a list of coordinates
+type Ship = [Coordinate]
+-- Board is a 10x10 array where 0 means a area that has not been fired and 1 meaning an area not containing a ship that has been fired and 2 meaning a ship that has been sunk
+type Board = [[Char]]
+-- A player takes a State and returns a Coordinate
+type Player = State -> Coordinate
 type Game = State -> Coordinate -> Result
+-- InternalState is your board and list of ships, and the opponent board and their ships
+--type InternalState = ((Board, [Ship]), (Board, [Ship]))
+boardSize = 10
+shipSize = 3
+directions = ["up","down","left","right"]
 
---instance Eq State where =
-        --(==) (State InternalState s1) (State InternalState s2) =
+battleship_start = State ((startBoard,[[(1,1),(1,2)]]), (startBoard,[[(3,1),(3,2)]]))
 
--- the Battleship Game
-battleship :: Game
-battleship (State ((mymoves, myships), (oppMoves, oppShips)) availableMoves) move
-    | not (elem move availableMoves) = ContinueGame (State ((mymoves, myships), (oppMoves, oppShips)) availableMoves)
-    | length availableMoves == 0 = EndOfGame 1.0 (State ((mymoves, myships), (oppMoves, oppShips)) availableMoves)
-    | win move oppShips = EndOfGame 1.0 (State ((mymoves, myships), (oppMoves, oppShips)) availableMoves)
-    | otherwise = ContinueGame (State ((oppMoves, oppNewShips), (move:mymoves, myships)) [act | act <- availableMoves, act /= move])
-    where (_, oppNewShips) = checkHit move oppShips
+-- Create starting board of size 10x10 with all 0's
+startBoard::Board
+startBoard = replicate 10 (replicate 10 'O')
 
--- checks if a move ends up in a player winning
-win :: Coordinate -> [Ship] -> Bool
-win move [] = True
-win move shipLocations
-    | hit && (and (foldr (\x y -> if length x == 0 then True:y else False:y) [True] newShipLocations)) = True
-    | otherwise = False
-    where
-        (hit, newShipLocations) = checkHit move shipLocations
+-- Select the n-th element in a list
+select :: Int -> [a] -> a
+select n xs = head (drop (n-1) (take n xs))
 
--- checkHit takes in the move, the list of ships, and returns a tuple of if the move hit and updated list of ships
-checkHit :: Coordinate -> [Ship] -> (Bool, [Ship])
-checkHit move ships
-    | or (foldr (\x y -> if elem move x then True:y else False:y) [] ships) = (True, [removeFromLst move x | x <- ships])
-    | otherwise = (False, ships)
+-- Change n-th element in a list
+replace :: Int -> [a] -> a -> [a]
+replace n xs x = take (n-1) xs ++ [x] ++ drop n xs
 
--- Removes the specified element from the list
 removeFromLst :: (Eq a) => a -> [a] -> [a]
 removeFromLst item lst = foldr (\x y -> if x == item then y else x:y) [] lst
 
--- generates a grid as a 2d array of Coordinates which is maxCol by maxRow
-generateAvailableMoves :: Actions
-generateAvailableMoves = [(row, col) | row <- [1..10], col <- [1..10]]
+battleship:: Game
+battleship (State ((myBoard, myShips), (oppBoard,oppShips))) move
+  | length (head oppShips) == 1 && hit = EndOfGame 1.0 battleship_start
+  | otherwise = ContinueGame (State ((newBoard, removeDestroyedShips oppNewShips), (myBoard, myShips)))
+  where (hit, oppNewShips, newBoard) = checkHit move oppShips oppBoard
+
+removeDestroyedShips :: [Ship] -> [Ship]
+removeDestroyedShips [] = []
+removeDestroyedShips (x:xs) | null x    = removeDestroyedShips xs
+                            | otherwise = x : removeDestroyedShips xs
+  -- checkHit takes in the move, the list of ships and board, and returns a tuple of if the move hit and updated list of ships and board
+checkHit :: Coordinate -> [Ship] -> Board -> (Bool, [Ship], Board)
+checkHit move ships b
+    | or (foldr (\x y -> if elem move x then True:y else False:y) [] ships) = (True, [removeFromLst move x | x <- ships], fillBoard move b 'X')
+    | otherwise = (False, ships, fillBoard move b 'I')
+
+-- fills board at a coordinate with given input value
+fillBoard :: Coordinate -> Board -> Char -> Board
+fillBoard (x,y) b  val = replace x b (replace y (select x b) val)
+
+placeShips :: Int -> [Ship] -> IO [Ship]
+placeShips size ships =
+  if size <= shipSize then
+    do
+      ship <- inputShip size ships
+      allShips <- placeShips (size + 1) (ship : ships)
+      return (ship : allShips)
+  else return []
+
+
+
+inputShip :: Int -> [Ship] -> IO Ship
+inputShip len ships = do
+    putStrLn("Enter size " ++ show len ++ " ship row[1-10]: ")
+    shipRowAsString <- getLine
+    putStrLn("Enter size " ++ show len ++ " ship col[1-10]: ")
+    shipColAsString <- getLine
+    putStrLn("facing which direction? (up, right, down, left): ")
+    ostr <- getLine
+    let row = read shipRowAsString :: Int
+    let col = read shipColAsString :: Int
+    let ship = generateShip (row,col) len ostr
+    if validShip ship ships then
+      return ship
+    else
+      inputShip len ships
 
 -- generates a ship's coordinates based on the shiphead's coordinates, and the orientation of the ship
 generateShip :: Coordinate -> Int -> String -> Ship
 generateShip _ 0 _ = []
 generateShip (x,y) size orientation
-    | orientation == "up" = (x, y - (size - 1)) : generateShip (x,y) (size-1) orientation
-    | orientation == "right" = (x - (size - 1), y) : generateShip (x,y) (size-1) orientation
-    | orientation == "down" = (x, y + (size - 1)) : generateShip (x,y) (size-1) orientation
-    | otherwise = (x + (size - 1), y) : generateShip (x,y) (size-1) orientation
+  | orientation == "up" = (x - (size - 1), y) : generateShip (x,y) (size-1) orientation
+  | orientation == "left" = (x , y - (size - 1)) : generateShip (x,y) (size-1) orientation
+  | orientation == "down" = (x + (size - 1), y) : generateShip (x,y) (size-1) orientation
+  | otherwise = (x , y + (size - 1)) : generateShip (x,y) (size-1) orientation
 
 
 validShip :: Ship -> [Ship] -> Bool
@@ -86,22 +107,58 @@ shipsToCoord (h:t) = h++shipsToCoord t
 validCoord :: Coordinate -> Bool
 validCoord (x,y) = x >= 1 && x <= 10 && y >= 1 && y <= 10
 
-placeCPUShips =
-  do
-    let ships = [[(-1,-1)]]
-    ships <- randomlyPlaceShip 5 ships
-    ships <- randomlyPlaceShip 4 ships
-    ships <- randomlyPlaceShip 3 ships
-    ships <- randomlyPlaceShip 2 ships
-    return ships
+--play :: Board -> Board -> [Ship] -> [Ship] -> IO()
+--play b1 b2 s1 s2 = do
 
-randomlyPlaceShip :: Int -> [Ship] -> IO [Ship]
-randomlyPlaceShip n ships =
+generateOpponentShips :: Int -> [Ship] -> IO [Ship]
+generateOpponentShips size ships =
+  if size <= shipSize then
+    do
+      ship <- generateRandomShip size ships
+      shipsSoFar <- generateOpponentShips (size + 1) (ship:ships)
+      return (ship:shipsSoFar)
+    else return []
+
+generateRandomShip :: Int -> [Ship] -> IO Ship
+generateRandomShip n ships =
   do
     g <- newStdGen
     let coord = ( ((randomRs (1,10) g) !! 0), ((randomRs (1,10) g) !! 1) )
     let dir = directions !! (head (randomRs (0,3) g))
     let newShip = generateShip coord n dir
     if validShip newShip ships
-      then return [newShip]
-      else  randomlyPlaceShip n ships
+      then return newShip
+      else  generateRandomShip n ships
+
+
+person_play :: Game -> Result -> IO ()
+person_play game (ContinueGame state) =
+  do
+    let State ((b1,s1),(b2,s2)) = state
+    putStrLn (show b1)
+    putStrLn (show s1)
+    putStrLn (show b2)
+    putStrLn (show s2)
+    putStrLn("Enter Row: ")
+    rowAsString <- getLine
+    putStrLn("Enter Column: ")
+    colAsString <- getLine
+    let row = read rowAsString :: Int
+    let col = read colAsString :: Int
+    person_play game (game state (row,col))
+
+person_play game (EndOfGame val battleship_start) =
+  do
+    putStrLn ("Game Over")
+
+
+play:: IO()
+play = do
+  putStrLn("Place down your ships")
+  playerShips <- placeShips 2 []
+  oppShips <- generateOpponentShips 2 []
+  let newState = State ((fillShips (shipsToCoord playerShips) startBoard,playerShips), (startBoard,oppShips))
+  person_play battleship (ContinueGame newState)
+
+fillShips::[Coordinate] -> Board -> Board
+fillShips coords b = foldr (\x y -> fillBoard x y 'S') b coords
