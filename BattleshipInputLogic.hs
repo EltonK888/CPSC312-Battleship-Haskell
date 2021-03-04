@@ -5,6 +5,7 @@ import BattleshipGraphics
 import Graphics.Gloss.Interface.Pure.Game
 
 
+-- takes an event from the game and a world (result) and returns a new world (new result)
 event :: Event -> Result -> Result
 event (EventKey (MouseButton LeftButton) Up _ (mx, my)) (ContinueGame (State ((mymoves, myships, myhit, myAvailMoves), (oppMoves, oppShips, opphit, oppAvailMoves))))
     | not (elem mousePos myAvailMoves) = ContinueGame (State ((mymoves, myships, myhit, myAvailMoves), (oppMoves, oppShips, opphit, oppAvailMoves)))
@@ -19,6 +20,5 @@ event (EventKey (MouseButton LeftButton) Up _ (mx, my)) (ContinueGame (State ((m
         -- (hitOwn, _, _) = checkHit mousePos myships
 event _ world = world
 
+-- converts a mouse click position into a grid coordinate
 mapMousePos x = fromIntegral (round ((x + (50.0*((fromIntegral maxCol)/2)))/50))
-
---transformGame _ game =
