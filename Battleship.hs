@@ -40,13 +40,13 @@ removeFromLst item lst = foldr (\x y -> if x == item then y else x:y) [] lst
 battleship:: Game
 battleship (State ((myBoard, myShips), (oppBoard,oppShips))) move
   | length (head oppShips) == 1 && hit = EndOfGame 1.0 battleship_start
-  | otherwise = ContinueGame (State ((newBoard, removeDestroyedShips oppNewShips), (myBoard, myShips)))
+  | otherwise = ContinueGame (State ((newBoard, removeEmptyShips oppNewShips), (myBoard, myShips)))
   where (hit, oppNewShips, newBoard) = checkHit move oppShips oppBoard
 
-removeDestroyedShips :: [Ship] -> [Ship]
-removeDestroyedShips [] = []
-removeDestroyedShips (x:xs) | null x    = removeDestroyedShips xs
-                            | otherwise = x : removeDestroyedShips xs
+removeEmptyShips :: [Ship] -> [Ship]
+removeEmptyShips [] = []
+removeEmptyShips (x:xs) | null x    = removeEmptyShips xs
+                            | otherwise = x : removeEmptyShips xs
   -- checkHit takes in the move, the list of ships and board, and returns a tuple of if the move hit and updated list of ships and board
 checkHit :: Coordinate -> [Ship] -> Board -> (Bool, [Ship], Board)
 checkHit move ships b
@@ -61,15 +61,15 @@ placeShips :: Int -> [Ship] -> IO [Ship]
 placeShips size ships =
   if size <= shipSize then
     do
-      ship <- inputShip size ships
+      ship <- placeShip size ships
       allShips <- placeShips (size + 1) (ship : ships)
       return (ship : allShips)
   else return []
 
 
 
-inputShip :: Int -> [Ship] -> IO Ship
-inputShip len ships = do
+placeShip :: Int -> [Ship] -> IO Ship
+placeShip len ships = do
     putStrLn("Enter size " ++ show len ++ " ship row[1-10]: ")
     shipRowAsString <- getLine
     putStrLn("Enter size " ++ show len ++ " ship col[1-10]: ")
@@ -82,7 +82,7 @@ inputShip len ships = do
     if validShip ship ships then
       return ship
     else
-      inputShip len ships
+      placeShip len ships
 
 -- generates a ship's coordinates based on the shiphead's coordinates, and the orientation of the ship
 generateShip :: Coordinate -> Int -> String -> Ship
