@@ -1,7 +1,10 @@
 module Battleship where
 
-maxRow = 5
-maxCol = 5
+maxRow :: Int
+maxRow = 8
+
+maxCol :: Int
+maxCol = 8
 
 data State = State InternalState Actions
             deriving (Eq, Show)
@@ -10,12 +13,15 @@ data State = State InternalState Actions
 data Result = EndOfGame Double State
             | ContinueGame State
             deriving (Eq, Show)
+type Board = [Coordinate]
 
 -- Actions are a list of coordinates
 type Actions = [Coordinate]
 
 -- a Ship is just a list of coordinates
 type Ship = [Coordinate] 
+
+-- a Board is also just a list of coordinates
 
 type Player = State -> Coordinate
 
